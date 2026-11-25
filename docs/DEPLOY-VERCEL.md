@@ -76,6 +76,18 @@ If this is going in front of real customers, split it:
 That is the architecture in `docs/ARCHITECTURE.md`; the Vercel-only target exists because a
 single-URL deployment is useful for demos and review.
 
+## Two Vercel behaviours worth knowing
+
+1. **Deployment protection.** Per-deployment URLs (`<deployment>-<hash>.vercel.app`) sit behind
+   Vercel Authentication and return `302` to anonymous visitors. The project's production domain
+   (`auriomhq-ai-visibility-analyzer.vercel.app`) is public. To share a preview build, disable
+   *Settings → Deployment Protection*, or use the production domain.
+2. **Git deploys are opt-in on API-created projects.** This project was created through the API, so
+   `gitProviderOptions.createDeployments` is `disabled` and a `git push` does **not** start a build.
+   Turn it on under *Settings → Git → Production deployments*, or deploy explicitly with
+   `vercel --prod`. The commit that produced the current live deployment is named in the reply that
+   shipped it.
+
 ## Deploying it yourself
 
 ```bash

@@ -9,6 +9,7 @@ PDF and creates shareable reports — with an AuriomHQ lead-capture path at the 
 
 - **Brand:** AuriomHQ · **Product:** AI Visibility Analyzer
 - **Primary CTA:** Analyse My Website
+- **Live deployment:** https://auriomhq-ai-visibility-analyzer.vercel.app
 - **Live surface:** `/` (analyzer), `/methodology`, `/audit/{id}` (results), `/r/{token}` (shared report)
 
 > This repository is a standalone application. It does not modify or replace the existing

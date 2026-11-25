@@ -49,6 +49,22 @@ only; production behaviour (rejection) is asserted separately in `tests/test_sec
 - Reviewed desktop (1440 px) and mobile (390 px) renders of landing, progress, dashboard, all six tabs, share dialog, failure state, shared report and methodology pages.
 - Verified the AI layer end-to-end against a local OpenAI-compatible stub: `aiEnhanced: true`, findings limited to supplied evidence; with no key the rule-based engine is used and the audit still completes.
 
+## Deployment verification (Vercel, production)
+
+Run against https://auriomhq-ai-visibility-analyzer.vercel.app after the deployment was live:
+
+| Check | Result |
+|---|---|
+| `GET /`, `/methodology`, `/audit/{id}`, `/r/{token}` | `200`, SPA shell + client routes resolve |
+| `/assets/*.js`, `/assets/*.css` | `200` (273 KB / 35 KB) |
+| `POST /api/audits` (auriomhq.work) | `200`, **completed inline in 14 s**, 6 pages, 53 checks, overall 78 (SEO 92 / AEO 56 / GEO 81) |
+| `GET /api/audits/{id}`, `/pdf` | `200`; valid 8-page PDF (52 KB) |
+| Share → public report → shared PDF → revoke | `200` → `200` → `200` → `404` after revoke |
+| SSRF guard on the deployed function | `127.0.0.1`, `169.254.169.254`, `localhost`, `file:///etc/passwd` all `400` |
+| Lead form / honeypot / invalid URL / unknown routes | `200` (`delivered: ["stored"]`) / `400` / `400` / `404` |
+| Browser flow (Playwright, Chromium) | submit → dashboard → six tabs → share dialog → shared report renders; **zero console errors** |
+| Cross-check | `example.com` scored 26 (SEO 46 / AEO 11 / GEO 15) on Vercel — identical to the local run |
+
 ## Known test gaps
 
 - No browser-automation regression suite is committed (visual review only); adding Playwright is recommended before production.
