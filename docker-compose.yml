@@ -1,0 +1,16 @@
+services:
+  analyzer:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/auriomhq.db
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+    volumes:
+      - analyzer-data:/data
+    restart: unless-stopped
+
+volumes:
+  analyzer-data:
