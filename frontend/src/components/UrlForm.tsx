@@ -34,7 +34,18 @@ export function UrlForm({
     setBusy(true);
     try {
       const created = await api.startAudit(url);
-      navigate(`/audit/${created.id}`);
+      // Serverless deployments (Vercel) finish the audit inside the POST request,
+      // so hand the result straight to the dashboard instead of polling for it.
+      if (created.report || created.status === 'completed' || created.status === 'failed') {
+        try {
+          window.sessionStorage.setItem(`auriomhq.audit.${created.id}`, JSON.stringify(created));
+        } catch {
+          /* storage unavailable — the dashboard falls back to a normal fetch */
+        }
+        navigate(`/audit/${created.id}`, { state: { initial: created } });
+      } else {
+        navigate(`/audit/${created.id}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start the audit.');
       setBusy(false);

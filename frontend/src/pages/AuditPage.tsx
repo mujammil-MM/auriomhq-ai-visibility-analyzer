@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { AlertTriangle, ArrowLeft, Clock3, Loader2, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { Dashboard } from '../components/Dashboard';
 import { Card, Eyebrow, Skeleton } from '../components/Primitives';
 import { ProgressTimeline } from '../components/ProgressTimeline';
@@ -11,6 +11,24 @@ import { formatDate, prettyUrl } from '../lib/utils';
 import type { AuditStatus, ShareResult } from '../lib/types';
 
 const RECENT_KEY = 'auriomhq.recent-audits';
+const CACHE_PREFIX = 'auriomhq.audit.';
+
+function cacheAudit(status: AuditStatus) {
+  try {
+    window.sessionStorage.setItem(CACHE_PREFIX + status.id, JSON.stringify(status));
+  } catch {
+    /* storage unavailable — polling covers it */
+  }
+}
+
+function readCachedAudit(id: string): AuditStatus | null {
+  try {
+    const raw = window.sessionStorage.getItem(CACHE_PREFIX + id);
+    return raw ? (JSON.parse(raw) as AuditStatus) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function rememberAudit(id: string, url?: string, score?: number) {
   try {
@@ -25,6 +43,7 @@ export function rememberAudit(id: string, url?: string, score?: number) {
 
 export function AuditPage() {
   const { auditId = '' } = useParams();
+  const location = useLocation();
   const [status, setStatus] = useState<AuditStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -41,6 +60,7 @@ export function AuditPage() {
       setStatus(data);
       if (data.url) rememberAudit(auditId, data.url, data.report?.scores.overall ?? undefined);
       if (data.status === 'completed' || data.status === 'failed') {
+        cacheAudit(data);
         window.clearInterval(pollRef.current);
       }
     } catch (err) {
@@ -59,9 +79,21 @@ export function AuditPage() {
 
   useEffect(() => {
     startedAt.current = Date.now();
-    setStatus(null);
     setError(null);
     setNotFound(false);
+
+    // A serverless deployment returns the finished audit from the POST request.
+    // Prefer that result (and the session cache) over a network round-trip that
+    // could land on a different instance.
+    const handedOver = (location.state as { initial?: AuditStatus } | null)?.initial ?? null;
+    const seeded = handedOver ?? readCachedAudit(auditId);
+    if (seeded && seeded.report) {
+      setStatus(seeded);
+      if (seeded.url) rememberAudit(auditId, seeded.url, seeded.report.scores.overall ?? undefined);
+      return;
+    }
+
+    setStatus(null);
     void poll();
     pollRef.current = window.setInterval(() => void poll(), 1100);
     const ticker = window.setInterval(() => setElapsed(Math.round((Date.now() - startedAt.current) / 1000)), 1000);
@@ -69,7 +101,7 @@ export function AuditPage() {
       window.clearInterval(pollRef.current);
       window.clearInterval(ticker);
     };
-  }, [auditId, poll]);
+  }, [auditId, poll, location.state]);
 
   if (notFound) {
     return (

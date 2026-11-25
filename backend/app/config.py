@@ -39,7 +39,13 @@ class Settings:
     env: str = os.getenv("APP_ENV", "development")
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = _env_int("PORT", 8000)
-    database_path: str = os.getenv("DATABASE_PATH", str(BASE_DIR / "data" / "auriomhq.db"))
+    # Serverless hosts (Vercel, Lambda) only allow writes to /tmp and cannot keep
+    # background tasks alive after the response, so audits run inline instead.
+    serverless: bool = _env_bool("SERVERLESS", False)
+    database_path: str = os.getenv(
+        "DATABASE_PATH",
+        "/tmp/auriomhq.db" if _env_bool("SERVERLESS", False) else str(BASE_DIR / "data" / "auriomhq.db"),
+    )
     static_dir: str = os.getenv("STATIC_DIR", str(BASE_DIR / "backend" / "static"))
     cors_origins: tuple[str, ...] = field(
         default_factory=lambda: tuple(

@@ -37,11 +37,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+/** Local/docker POST returns a job stub; on serverless the POST returns the finished audit. */
+export type AuditStartResponse = Pick<AuditStatus, 'id' | 'status' | 'url'> &
+  Partial<AuditStatus> & { pollUrl?: string };
+
 export const api = {
   config: () => request<PublicConfig>('/api/config'),
   methodology: () => request<Methodology>('/api/methodology'),
   startAudit: (url: string, maxPages?: number) =>
-    request<{ id: string; status: string; url: string; pollUrl: string }>('/api/audits', {
+    request<AuditStartResponse>('/api/audits', {
       method: 'POST',
       headers: JSON_HEADERS,
       body: JSON.stringify({ url, max_pages: maxPages ?? null }),

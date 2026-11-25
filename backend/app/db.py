@@ -77,12 +77,22 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+_initialised: set[str] = set()
+
+
 def _connect() -> sqlite3.Connection:
-    os.makedirs(os.path.dirname(settings.database_path), exist_ok=True)
-    conn = sqlite3.connect(settings.database_path, timeout=15)
+    path = settings.database_path
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    conn = sqlite3.connect(path, timeout=15)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
+    # Serverless cold starts and freshly mounted volumes may not have run the
+    # startup hook, so make sure the schema exists before the first statement.
+    if path not in _initialised:
+        conn.executescript(SCHEMA)
+        conn.commit()
+        _initialised.add(path)
     return conn
 
 

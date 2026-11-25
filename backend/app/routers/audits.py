@@ -60,6 +60,16 @@ async def create_audit(payload: AuditRequest, request: Request) -> AuditCreatedR
     url = target.url
     record = await db.create_audit(url, chash)
     await db.log_event("audit_started", record["id"], {"url": url, "maxPages": payload.max_pages})
+
+    if settings.serverless:
+        # The request must not return until the audit is finished: serverless
+        # runtimes freeze background work the moment the response is sent.
+        await jobs.run_audit_inline(record["id"], url)
+        row = await db.get_audit(record["id"])
+        if row is None:  # pragma: no cover - defensive
+            raise HTTPException(status_code=500, detail="The audit could not be stored.")
+        return JSONResponse(jobs.serialize_status(row), status_code=200)
+
     await jobs.start_audit(record["id"], url)
     return AuditCreatedResponse(
         id=record["id"], status="queued", url=url,

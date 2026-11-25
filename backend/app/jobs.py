@@ -56,6 +56,15 @@ async def start_audit(audit_id: str, url: str) -> None:
     task.add_done_callback(_tasks.discard)
 
 
+async def run_audit_inline(audit_id: str, url: str) -> None:
+    """Run the whole audit inside the current request.
+
+    Serverless platforms freeze the process as soon as the response is returned,
+    so a background task would never finish there.
+    """
+    await _run(audit_id, url)
+
+
 async def _run(audit_id: str, url: str) -> None:
     _record(audit_id, "queued", "Audit queued", 2)
     await db.update_progress(audit_id, "queued", "queued", "Audit queued", 2)

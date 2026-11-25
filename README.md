@@ -273,6 +273,15 @@ container on port 8000. The SQLite database lives on the `analyzer-data` volume.
 - Set `PUBLIC_BASE_URL` to the public origin so share links are absolute.
 - Set `TRUST_PROXY=1` behind the platform proxy.
 
+### Vercel
+
+A Vercel target is included (`vercel.json` + `api/index.py`): the SPA is served from the CDN and
+all API routes hit one Python function. Set `SERVERLESS=1` there (the entry point does it for you)
+so audits run inside the request instead of a background task, and expect a **reduced** mode —
+`/tmp` storage per instance, a 60 s function budget, per-instance rate limiting. Full details,
+limits and the recommended split (static site on Vercel + container for the API):
+**[docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md)**.
+
 ### Reverse proxy (nginx example)
 
 ```nginx
