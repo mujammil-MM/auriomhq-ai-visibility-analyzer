@@ -4,7 +4,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: '../backend/static',
+    // Local/Docker builds write straight into the API's static directory so a
+    // single process serves everything. Static hosts (Vercel) set
+    // BUILD_OUT_DIR=dist because they take the folder as deployment output.
+    outDir: process.env.BUILD_OUT_DIR ?? '../backend/static',
     emptyOutDir: true,
     sourcemap: false,
   },
